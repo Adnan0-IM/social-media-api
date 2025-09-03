@@ -3,10 +3,14 @@ import { connectDB } from "./config/db.js";
 import { userRouter } from "./routes/userRoute.js";
 import { authRouter } from "./routes/auth.js";
 import config from "./config/config.js";
+import cors from "cors";
 
 const PORT = config.PORT;
 const app = express();
+
+app.use(cors());
 app.use(express.json());
+
 app.get("/", (req, res) => {
   res.send({ success: true, message: "Api is running" });
 });
