@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, type CallbackError } from "mongoose";
 const postSchema = new Schema({
   author: {
     type: Schema.Types.ObjectId,
@@ -19,16 +19,22 @@ const postSchema = new Schema({
   },
 });
 
-postSchema.pre("save", async function () {
+postSchema.pre("save", async function (next) {
   try {
-    // Find the user document and update its posts array with the new post
-    await model("User").findByIdAndUpdate(
+    const result = await model("User").findByIdAndUpdate(
       this.author,
       { $push: { posts: this._id } },
       { new: true },
     );
+
+    if (!result) {
+      throw new Error(`User with ID ${this.author} not found`);
+    }
+
+    next();
   } catch (err) {
-    console.error(err);
+    console.error("Failed to update user with post reference:", err);
+    next(err as CallbackError);
   }
 });
 

@@ -24,13 +24,36 @@ export const createUser = async (req: Request, res: Response) => {
 };
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.find();
-    return res
-      .status(200)
-      .json({ success: true, message: "Fetched users successfully", users });
+    // Get pagination parameters from query string with defaults
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count for calculating total pages
+    const totalUsers = await User.countDocuments();
+
+    // Get paginated users
+    const users = await User.find().skip(skip).limit(limit).select("-password"); // Exclude sensitive data
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched users successfully",
+      users,
+      pagination: {
+        totalUsers,
+        totalPages: Math.ceil(totalUsers / limit),
+        currentPage: page,
+        hasNextPage: page < Math.ceil(totalUsers / limit),
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     console.log(error);
-    return res.json({ status: false, message: "Failed to fetch users", error });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch users",
+      error,
+    });
   }
 };
 export const getUser = async (req: Request, res: Response) => {
